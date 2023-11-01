@@ -3,8 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include "definitions.h"
-#include "BinariesLancher/launcher.h"
+#include "BinariesLauncher/launcher.h"
 #include "Configuration/configurationManager.h"
 #include "debug.h"
 
