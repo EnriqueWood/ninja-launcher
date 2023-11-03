@@ -1,36 +1,24 @@
-#include <stdio.h>
 #include <windows.h>
 #include "../debug.h"
 
 int launchApps(char **paths) {
     for (int i = 0; paths[i] != NULL; ++i) {
-        debugPrint("Creating process %s...\n", paths[i]);
-        STARTUPINFO si;
-        PROCESS_INFORMATION pi;
+        debugPrint("Launching process %s...\n", paths[i]);
 
-        // Inicializa las estructuras de STARTUPINFO y PROCESS_INFORMATION.
-        ZeroMemory(&si, sizeof(si));
-        si.cb = sizeof(si);
-        ZeroMemory(&pi, sizeof(pi));
+        HINSTANCE hResult = ShellExecute(
+                NULL,                   // No parent window
+                "open",            // Operation to perform
+                paths[i],               // Application path
+                NULL,             // No parameters
+                NULL,              // Default directory
+                SW_SHOWMINNOACTIVE // Start minimized without activating the window
+        );
 
-        if (!CreateProcess(NULL,   // Nombre del módulo
-                           paths[i],        // Línea de comandos
-                           NULL,           // Atributos de seguridad de proceso
-                           NULL,           // Atributos de seguridad de hilo
-                           FALSE,          // Heredar manijas
-                           0,              // Flags de creación
-                           NULL,           // Usar entorno del padre
-                           NULL,           // Usar directorio del padre
-                           &si,            // Puntero a STARTUPINFO
-                           &pi)            // Puntero a PROCESS_INFORMATION
-                ) {
-            debugPrint("CreateProcess failed (%lu): executable path was: '%s'.\n", GetLastError(), paths[i]);
+        if ((INT_PTR) hResult <= 32) {
+            debugPrint("ShellExecute failed (%ld): executable path was: '%s'.\n", (LONG_PTR) hResult, paths[i]);
         } else {
-            debugPrint("Process '%s' created successfully (PID: %lu).\n", paths[i], pi.dwProcessId);
+            debugPrint("Process '%s' launched successfully.\n", paths[i]);
         }
-
-        CloseHandle(pi.hProcess);
-        CloseHandle(pi.hThread);
     }
 
     return 0;
