@@ -1,12 +1,13 @@
 #ifndef NINJALAUNCHER_CONFIGURATIONLOADER_H
 
 typedef struct {
-    char** executablesToLaunch;
-    char** executablesToHide;
-    char** forbiddenClassNames;
+    char **executablesToLaunch;
+    char **executablesToHide;
+    char **doNotMinimizeTheseClassNames;
 } Configuration;
 
-Configuration* loadConfiguration();
+Configuration *loadConfiguration();
+
 void freeConfigurationMemory(Configuration *configuration);
 
 #define NINJALAUNCHER_CONFIGURATIONLOADER_H

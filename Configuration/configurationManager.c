@@ -10,12 +10,13 @@
 #define CONFIG_EXAMPLE "\
 [ExecutablesToLaunch]\n\
 C:\\Program Files (x86)\\Steam\\Steam.exe\n\
-notepad\n\
 \n\
 [ExecutablesToHide]\n\
 steamwebhelper.exe\n\
+steam.exe\n\
+NinjaLauncher.exe\n\
 \n\
-[ForbiddenClassNames]\n\
+[DoNotMinimizeTheseClassNames]\n\
 Chrome_WidgetWin_0\n\
 Chrome_SystemMessageWindow\n\
 crashpad_SessionEndWatcher\n\
@@ -29,26 +30,26 @@ Configuration *createConfiguration() {
         perror("Error allocating memory for config");
         return NULL;
     }
-    config->executablesToLaunch = malloc(500 * sizeof(char*));
-    config->executablesToHide = malloc(500 * sizeof(char*));
-    config->forbiddenClassNames = malloc(500 * sizeof(char*));
+    config->executablesToLaunch = malloc(500 * sizeof(char *));
+    config->executablesToHide = malloc(500 * sizeof(char *));
+    config->doNotMinimizeTheseClassNames = malloc(500 * sizeof(char *));
     return config;
 }
 
 void printConfiguration(const Configuration *config) {
-   debugPrint("Executables to Launch:\n");
+    debugPrint("Executables to Launch:\n");
     for (int i = 0; config->executablesToLaunch[i] != NULL; ++i) {
-       debugPrint("%s\n", config->executablesToLaunch[i]);
+        debugPrint("%s\n", config->executablesToLaunch[i]);
     }
 
-   debugPrint("\nExecutables to Hide:\n");
+    debugPrint("\nExecutables to Hide:\n");
     for (int i = 0; config->executablesToHide[i] != NULL; ++i) {
-       debugPrint("%s\n", config->executablesToHide[i]);
+        debugPrint("%s\n", config->executablesToHide[i]);
     }
 
-   debugPrint("\nForbidden Class Names:\n");
-    for (int i = 0; config->forbiddenClassNames[i] != NULL; ++i) {
-       debugPrint("%s\n", config->forbiddenClassNames[i]);
+    debugPrint("\nForbidden Class Names:\n");
+    for (int i = 0; config->doNotMinimizeTheseClassNames[i] != NULL; ++i) {
+        debugPrint("%s\n", config->doNotMinimizeTheseClassNames[i]);
     }
 }
 
@@ -80,16 +81,16 @@ void createExampleConfigFile(const char *configPath) {
 }
 
 void freeConfigurationMemory(Configuration *configuration) {
-    if(configuration != NULL) {
+    if (configuration != NULL) {
         free(configuration->executablesToLaunch);
         free(configuration->executablesToHide);
-        free(configuration->forbiddenClassNames);
+        free(configuration->doNotMinimizeTheseClassNames);
         free(configuration);
     }
 }
 
 Configuration *loadConfiguration() {
-   debugPrint("Init reading config file\n");
+    debugPrint("Init reading config file\n");
     Configuration *config = createConfiguration();
     if (config == NULL) return NULL;
 
@@ -97,9 +98,9 @@ Configuration *loadConfiguration() {
     snprintf(configPath, MAX_PATH, "%s\\%s", getDocumentsPath(), CONFIG_FILE);
 
     if (access(configPath, F_OK) != -1) {
-       debugPrint("The file exists!\n");
+        debugPrint("The file exists!\n");
     } else {
-       debugPrint("The file does not exist, a template will be created!\n");
+        debugPrint("The file does not exist, a template will be created!\n");
         createExampleConfigFile(configPath);
     }
 
@@ -114,7 +115,7 @@ Configuration *loadConfiguration() {
     int section = 0;
     int executablesToLaunchCount = 0;
     int executablesToHideCount = 0;
-    int forbiddenClassNamesCount = 0;
+    int doNotMinimizeTheseClassNamesCount = 0;
 
     while (fgets(line, sizeof(line), file) != NULL) {
         size_t len = strlen(line);
@@ -122,42 +123,42 @@ Configuration *loadConfiguration() {
             line[len - 1] = '\0';
         }
 
-       debugPrint("Reading line %s\n", line);
+        debugPrint("Reading line %s\n", line);
 
         if (strncmp(line, "[ExecutablesToLaunch]", 21) == 0) {
             section = 1;
-           debugPrint("Now in section %d\n", section);
+            debugPrint("Now in section %d\n", section);
         } else if (strncmp(line, "[ExecutablesToHide]", 19) == 0) {
             section = 2;
-           debugPrint("Now in section %d\n", section);
-        } else if (strncmp(line, "[ForbiddenClassNames]", 21) == 0) {
+            debugPrint("Now in section %d\n", section);
+        } else if (strncmp(line, "[DoNotMinimizeTheseClassNames]", 21) == 0) {
             section = 3;
-           debugPrint("Now in section %d\n", section);
+            debugPrint("Now in section %d\n", section);
         } else if (line[0] != '[' && line[0] != '\0') {
             if (section == 1) {
                 config->executablesToLaunch[executablesToLaunchCount] = malloc(len * sizeof(char));
                 strcpy(config->executablesToLaunch[executablesToLaunchCount], line);
                 executablesToLaunchCount++;
-               debugPrint("Line %s inserted in section %d\n", line, section);
+                debugPrint("Line %s inserted in section %d\n", line, section);
             } else if (section == 2) {
                 config->executablesToHide[executablesToHideCount] = malloc(len * sizeof(char));
                 strcpy(config->executablesToHide[executablesToHideCount], line);
                 executablesToHideCount++;
-               debugPrint("Line %s inserted in section %d\n", line, section);
+                debugPrint("Line %s inserted in section %d\n", line, section);
             } else if (section == 3) {
-                config->forbiddenClassNames[forbiddenClassNamesCount] = malloc(len * sizeof(char));
-                strcpy(config->forbiddenClassNames[forbiddenClassNamesCount], line);
-                forbiddenClassNamesCount++;
-               debugPrint("Line %s inserted in section %d\n", line, section);
+                config->doNotMinimizeTheseClassNames[doNotMinimizeTheseClassNamesCount] = malloc(len * sizeof(char));
+                strcpy(config->doNotMinimizeTheseClassNames[doNotMinimizeTheseClassNamesCount], line);
+                doNotMinimizeTheseClassNamesCount++;
+                debugPrint("Line %s inserted in section %d\n", line, section);
             }
         }
     }
     config->executablesToLaunch[executablesToLaunchCount] = NULL;
     config->executablesToHide[executablesToHideCount] = NULL;
-    config->forbiddenClassNames[forbiddenClassNamesCount] = NULL;
+    config->doNotMinimizeTheseClassNames[doNotMinimizeTheseClassNamesCount] = NULL;
     fclose(file);
 
     printConfiguration(config);
-   debugPrint("Finished reading config file\n");
+    debugPrint("Finished reading config file\n");
     return config;
 }

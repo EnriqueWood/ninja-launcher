@@ -7,6 +7,8 @@
 #include "Configuration/configurationManager.h"
 #include "debug.h"
 
+#define CHECKING_TIME_MS 30000
+#define SLEEP_BETWEEN_ITERATIONS_MS 25
 typedef struct {
     HWND hwnd;
     char windowTitle[256];
@@ -118,19 +120,48 @@ bool isInText(const char *fullText, const char *stringToSearch) {
     return strstr(fullText, stringToSearch) != NULL;
 }
 
-int shouldMinimize(WindowInfo windowInfo, const char *processName) {
-    // Verificar si el className de windowInfo está en la lista de forbiddenClassNames
-    for (int i = 0; config->forbiddenClassNames[i] != NULL && strlen(config->forbiddenClassNames[i]) > 0; i++) {
-        if (strstr(windowInfo.className, config->forbiddenClassNames[i]) != NULL) {
-            return 0;
+bool shouldMinimize(WindowInfo windowInfo) {
+    // Verificar si el className de windowInfo está en la lista de doNotMinimizeTheseClassNames
+    debugPrint("--> Checking if classname '%s' from executable '%s' is in forbidden classnames\n",
+               windowInfo.className,
+               windowInfo.exePath
+    );
+    for (int i = 0;
+         config->doNotMinimizeTheseClassNames[i] != NULL && strlen(config->doNotMinimizeTheseClassNames[i]) > 0; i++) {
+        if (isInText(windowInfo.className, config->doNotMinimizeTheseClassNames[i])) {
+            debugPrint("--> Classname '%s' from executable '%s' is in forbidden classname '%s'\n",
+                       windowInfo.className,
+                       windowInfo.exePath,
+                       config->doNotMinimizeTheseClassNames[i]
+            );
+            return false;
         }
     }
 
-    // Verificar si el proceso debe ser incluido
-    return isInText(windowInfo.exePath, processName);
+    debugPrint("--> Classname '%s' from executable '%s' is potentially minimizable.\n",
+               windowInfo.className,
+               windowInfo.exePath
+    );
+
+    debugPrint("--> Checking if process '%s' is in executables to hide list\n",
+               windowInfo.exePath
+    );
+    for (int i = 0; config->executablesToHide[i] != NULL && strlen(config->executablesToHide[i]) > 0; i++) {
+        if (isInText(windowInfo.exePath, config->executablesToHide[i])) {
+            debugPrint("--> Process '%s' is in forbidden executable '%s'\n",
+                       windowInfo.exePath,
+                       config->executablesToHide[i]
+            );
+            return true;
+        }
+    }
+    debugPrint("--> Process '%s' '%s' is NOT in forbidden executables list.\n",
+               windowInfo.exePath
+    );
+    return false;
 }
 
-int main() {
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
     config = loadConfiguration();
     if (!config) {
         fprintf(stderr, "Failed to load configuration\n");
@@ -140,18 +171,17 @@ int main() {
     // Buscar todas las ventanas y almacenar información sobre ellas
     EnumWindows((WNDENUMPROC) EnumWindowsProc, 0);
 
-   // PrintWindowsInfo(windowList, windowCount);
+    // PrintWindowsInfo(windowList, windowCount);
 
     DWORD startTime = GetTickCount();
-    while (GetTickCount() - startTime < 60000) { // 60 segundos
+    while (GetTickCount() - startTime < CHECKING_TIME_MS) {
         windowCount = 0;
         EnumWindows((WNDENUMPROC) EnumWindowsProc, 0);
 
-        // Revisar si el nombre del ejecutable contiene "steamwebhelper.exe"
         for (int i = 0; i < windowCount; ++i) {
             handleAppWindow(windowList[i]);
         }
-        Sleep(100); // Esperar 100 ms antes de verificar de nuevo para no saturar el CPU
+        Sleep(SLEEP_BETWEEN_ITERATIONS_MS);
     }
 
     freeConfigurationMemory(config);
@@ -160,15 +190,13 @@ int main() {
 }
 
 void handleAppWindow(WindowInfo windowInfo) {
-    debugPrint("Checking executable '%s'\n", windowInfo.exePath);
-    for (int i = 0; config->executablesToHide[i] != NULL; i++) {
-        if (shouldMinimize(windowInfo, config->executablesToHide[i])) {
-            debugPrint("Executable '%s' should be minimized as it is not in %s\n", windowInfo.exePath,
-                   config->executablesToHide[i]);
-            SetWindowPos(windowInfo.hwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-            ShowWindow(windowInfo.hwnd, SW_MINIMIZE);
-        } else {
-            debugPrint("Executable '%s' should not be minimized\n", windowInfo.exePath);
-        }
+    debugPrint("Checking executable '%s' with info: \n%s\n", windowInfo.exePath, windowInfoToString(windowInfo));
+
+    if (shouldMinimize(windowInfo)) {
+        debugPrint("-> Executable '%s' should be minimized\n", windowInfo.exePath);
+        SetWindowPos(windowInfo.hwnd, HWND_BOTTOM, 999999, 999999, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+        ShowWindow(windowInfo.hwnd, SW_MINIMIZE);
+    } else {
+        debugPrint("Executable '%s' should not be minimized\n", windowInfo.exePath);
     }
 }

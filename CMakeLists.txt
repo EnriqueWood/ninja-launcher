@@ -3,7 +3,7 @@ project(NinjaLauncher C)
 
 set(CMAKE_C_STANDARD 11)
 
-add_executable(NinjaLauncher BinariesLauncher/launcher.c main.c
+add_executable(NinjaLauncher WIN32 BinariesLauncher/launcher.c main.c
         BinariesLauncher/launcher.h
         Configuration/configurationManager.c
         Configuration/configurationManager.h
