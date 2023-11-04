@@ -6,7 +6,7 @@
 #include "../Configuration/configurationManager.h"
 #include "../debug.h"
 
-#define CONFIG_FILE "NinjaLauncher\\config.txt"
+#define CONFIG_FILE "NinjaLauncher\\NinjaLauncherSettings.ini"
 #define CONFIG_EXAMPLE "\
 [ExecutablesToLaunch]\n\
 C:\\Program Files (x86)\\Steam\\Steam.exe\n\

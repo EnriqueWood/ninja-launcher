@@ -2,8 +2,22 @@
 #include "../debug.h"
 
 int launchApps(char **paths) {
+    char binaryPath[MAX_PATH];
+    char workDir[MAX_PATH];
+
     for (int i = 0; paths[i] != NULL; ++i) {
         debugPrint("Launching process %s...\n", paths[i]);
+        char *pipePos = strstr(paths[i], "|");
+
+        if (pipePos != NULL) {
+            strncpy(binaryPath, paths[i], pipePos - paths[i]);
+            binaryPath[pipePos - paths[i]] = '\0';
+            strcpy(workDir, pipePos + 1);
+            debugPrint("Work directory for the binary '%s' will be '%s'...\n", binaryPath, workDir);
+            SetCurrentDirectory(TEXT(workDir));
+        } else {
+            strcpy(binaryPath, paths[i]);
+        }
 
         HINSTANCE hResult = ShellExecute(
                 NULL,                   // No parent window
